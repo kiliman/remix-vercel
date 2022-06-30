@@ -1,21 +1,40 @@
-import { renderToString } from "react-dom/server";
-import type { EntryContext } from "@remix-run/node";
-import { RemixServer } from "@remix-run/react";
+import Bugsnag from '@bugsnag/js'
+import type { EntryContext } from '@remix-run/node'
+import { RemixServer } from '@remix-run/react'
+import { renderToString } from 'react-dom/server'
+
+Bugsnag.start({
+  apiKey: process.env.BUGSNAG_API_KEY!,
+})
 
 export default function handleRequest(
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
-  remixContext: EntryContext
+  remixContext: EntryContext,
 ) {
   const markup = renderToString(
-    <RemixServer context={remixContext} url={request.url} />
-  );
+    <RemixServer context={remixContext} url={request.url} />,
+  )
 
-  responseHeaders.set("Content-Type", "text/html");
+  responseHeaders.set('Content-Type', 'text/html')
 
-  return new Response("<!DOCTYPE html>" + markup, {
+  return new Response('<!DOCTYPE html>' + markup, {
     status: responseStatusCode,
-    headers: responseHeaders
-  });
+    headers: responseHeaders,
+  })
+}
+
+export function handleError(request: Request, error: Error, context: any) {
+  console.log('notify bugsnag')
+  if (context?.getRequestContext) {
+    Bugsnag.setUser(context.getRequestContext().user)
+  }
+  Bugsnag.notify(error, event => {
+    event.addMetadata('request', {
+      url: request.url,
+      method: request.method,
+      headers: Object.fromEntries(request.headers.entries()),
+    })
+  })
 }
