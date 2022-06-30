@@ -4,6 +4,7 @@
   "description": "",
   "license": "",
   "scripts": {
+    "postinstall": "patch-package",
     "build": "remix build",
     "dev": "remix dev"
   },
